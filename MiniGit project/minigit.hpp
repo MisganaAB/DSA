@@ -1,6 +1,7 @@
 #ifndef MINIGIT_HPP_INCLUDED
 #define MINIGIT_HPP_INCLUDED
 
+#include <unordered_map>
 #include <string>
 using namespace std;
 
@@ -22,8 +23,7 @@ private:
     int currentCommitNumber;
     unordered_map<string, CommitNode*> branches;
     
-    string currentBranch
-    int currentCommitNumber;
+    string currentBranch;
 
 public:
     MiniGit();
@@ -35,7 +35,7 @@ public:
     void checkout(int commitNumber);
     
     void printHistory();
-    void pringBranches();
+    void printBranches();
     
     void createBranch(const string& name);
     void checkoutBranch(const string& name);
