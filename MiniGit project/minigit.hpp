@@ -8,10 +8,12 @@ using namespace std;
 struct FileNode {
     string fileName;
     string versionedFileName;
+    string contentHash;
     FileNode* next;
 };
 
 struct CommitNode {
+    string message;
     int commitNumber;
     FileNode* fileHead;
     CommitNode* next;
@@ -27,6 +29,10 @@ private:
 
 public:
     MiniGit();
+
+    void mergeBranch(const string& branchName);
+    void diffCommits(int commit1, int commit2);
+
     ~MiniGit();
 
     void addFile(const string& filename);
