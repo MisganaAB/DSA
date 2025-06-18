@@ -9,7 +9,8 @@ int main() {
 
     while (true) {
         cout << "\n===== MiniGit Menu =====\n";
-        cout << "1. Add File\n2. Remove File\n3. Commit Changes\n4. Checkout Commit\n5. View History\n6. Create Branch\n7. Switch Branch\n8. List Branches\n9. Exit\nSelect: ";
+        cout << "1. Add File\n2. Remove File\n3. Commit Changes\n4. Checkout Commit\n";
+        cout << "5. View History\n6. Create Branch\n7. Switch Branch\n8. List Branches\n9. Exit\nSelect: ";
         cin >> choice;
         switch (choice) {
             case 1:
