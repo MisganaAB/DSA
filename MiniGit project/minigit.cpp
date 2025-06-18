@@ -27,9 +27,10 @@ int main() {
                 git.commit(); 
                 break;
             case 4:
+                int commitNum;
                 cout << "Commit # to checkout: "; 
-                cin >> choice; 
-                git.checkout(choice); 
+                cin >> commitNum; 
+                git.checkout(commitNum); 
                 break;
             case 5:
                 git.printHistory(); 
