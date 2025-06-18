@@ -1,23 +1,26 @@
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
 #include "minigit.hpp"
 
 bool fileExists(const string& filename) {
-ifstream file(filename);
-return file.good();
-} //function that takes filename as input and returns true if it can be opened, false otherwise.
+return filesystem::exists(filename);
+} 
 bool filesAreEqual(const string& file1, const string& file2) {
-ifstream f1(file1), f2(file2);
-if (!f1 || !f2) return false;
-
-string line1, line2;  
-while (getline(f1, line1) && getline(f2, line2)) {  
-    if (line1 != line2) return false;  
-}  
-return f1.eof() && f2.eof();
-
+    ifstream f1(file1, ios::binary), f2(file2, ios::binary);
+    if (!f1.is_open() || !f2.is_open()) {
+        cerr << "Error: Could not open files for comparison." << endl;
+        return false;
+    }
+    return equal(
+        istreambuf_iterator<char>(f1),
+        istreambuf_iterator<char>(),
+        istreambuf_iterator<char>(f2)
+    );
 }
-//compares contents of two files line by line, and returns true if they exist and are the same and false otherwise.
+
 
 
 
