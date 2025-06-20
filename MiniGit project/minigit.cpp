@@ -185,3 +185,58 @@ void MiniGit::checkoutBranch(const string& name) {
     cout << "Switched to branch '" << name << "' (HEAD -> #" << commitHead->commitNumber << ")";
     save();
 }
+
+
+void MiniGit::diffCommits(int c1, int c2) {
+    CommitNode *first = nullptr, *second = nullptr;
+    for (CommitNode* c = commitHead; c; c = c->next) {
+        if (c->commitNumber == c1) first = c;
+        if (c->commitNumber == c2) second = c;
+    }
+    if (!first || !second) {
+        cout << "Invalid commit numbers.";
+        return;
+    }
+
+    unordered_map<string, string> h1, h2;
+    for (FileNode* f = first->fileHead; f; f = f->next) h1[f->fileName] = f->contentHash;
+    for (FileNode* f = second->fileHead; f; f = f->next) h2[f->fileName] = f->contentHash;
+
+    unordered_set<string> all;
+    for (auto& [k, _] : h1) all.insert(k);
+    for (auto& [k, _] : h2) all.insert(k);
+
+    cout << "Changed files between commits " << c1 << " and " << c2 << ":";
+    for (const auto& f : all) {
+        if (h1[f] != h2[f]) cout << "- " << f << "";
+    }
+}
+
+void MiniGit::mergeBranch(const string& branchName) {
+    if (!branches.count(branchName)) {
+        cout << "Branch does not exist.";
+        return;
+    }
+    CommitNode* other = branches[branchName];
+    unordered_map<string, string> currentFiles, otherFiles;
+
+    for (FileNode* f = commitHead->fileHead; f; f = f->next)
+        currentFiles[f->fileName] = f->contentHash;
+
+    for (FileNode* f = other->fileHead; f; f = f->next) {
+        string fn = f->fileName;
+        string otherHash = f->contentHash;
+
+        if (!currentFiles.count(fn)) {
+            cout << "Merged new file from " << branchName << ": " << fn << "";
+            addFile(fn);
+        } else if (currentFiles[fn] != otherHash) {
+            cout << "CONFLICT: " << fn << " has changed in both branches.";
+        }
+    }
+}
+
+void MiniGit::init() {
+    createMinigitDirectory();
+    std::cout << "Initialized empty MiniGit repository in .minigit/\n";
+}
