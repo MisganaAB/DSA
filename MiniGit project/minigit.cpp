@@ -236,6 +236,135 @@ void MiniGit::mergeBranch(const string& branchName) {
     }
 }
 
+
+void MiniGit::save() {
+    std::filesystem::create_directories(".minigit/meta");
+    // Save HEAD (current branch)
+    std::ofstream headFile(".minigit/meta/HEAD.txt");
+    headFile << currentBranch << std::endl;
+    headFile.close();
+    // Save branches (branch name -> commit number)
+    std::ofstream branchesFile(".minigit/meta/branches.txt");
+    for (const auto& [name, head] : branches) {
+        branchesFile << name << " " << (head ? head->commitNumber : -1) << std::endl;
+    }
+    branchesFile.close();
+    // Save commits
+    std::ofstream commitsFile(".minigit/meta/commits.txt");
+    std::unordered_set<int> seen;
+    for (const auto& [name, head] : branches) {
+        for (CommitNode* c = head; c; c = c->next) {
+            if (seen.count(c->commitNumber)) continue;
+            seen.insert(c->commitNumber);
+            commitsFile << c->commitNumber << "|" << c->message << std::endl;
+            for (FileNode* f = c->fileHead; f; f = f->next) {
+                commitsFile << "F|" << f->fileName << "|" << f->versionedFileName << "|" << f->contentHash << std::endl;
+            }
+            commitsFile << "ENDC" << std::endl;
+        }
+    }
+    commitsFile.close();
+}
+
+void MiniGit::load() {
+    // Clear current state
+    for (auto& [b, head] : branches) {
+        CommitNode* c = head;
+        std::unordered_map<CommitNode*, bool> freed;
+        while (c && !freed[c]) {
+            freed[c] = true;
+            FileNode* f = c->fileHead;
+            while (f) {
+                FileNode* tmpF = f;
+                f = f->next;
+                delete tmpF;
+            }
+            CommitNode* tmpC = c;
+            c = c->next;
+            delete tmpC;
+        }
+    }
+    branches.clear();
+    commitHead = nullptr;
+    currentCommitNumber = 0;
+    currentBranch = "main";
+    // Load HEAD
+    std::ifstream headFile(".minigit/meta/HEAD.txt");
+    if (headFile) {
+        std::getline(headFile, currentBranch);
+        headFile.close();
+    }
+    // Load branches
+    std::unordered_map<int, CommitNode*> commitMap;
+    std::ifstream branchesFile(".minigit/meta/branches.txt");
+    std::vector<std::pair<std::string, int>> branchPairs;
+    if (branchesFile) {
+        std::string line;
+        while (std::getline(branchesFile, line)) {
+            std::istringstream iss(line);
+            std::string name;
+            int num;
+            if (iss >> name >> num) {
+                branchPairs.push_back({name, num});
+            }
+        }
+        branchesFile.close();
+    }
+    // Load commits
+    std::ifstream commitsFile(".minigit/meta/commits.txt");
+    std::unordered_map<int, CommitNode*> prevMap;
+    if (commitsFile) {
+        std::string line;
+        CommitNode* last = nullptr;
+        while (std::getline(commitsFile, line)) {
+            if (line.empty()) continue;
+            if (line.find('|') != std::string::npos && line.substr(0, 1) != "F") {
+                // Commit line
+                size_t bar = line.find('|');
+                int num = std::stoi(line.substr(0, bar));
+                std::string msg = line.substr(bar + 1);
+                CommitNode* c = new CommitNode{msg, num, nullptr, nullptr};
+                commitMap[num] = c;
+                if (last) last->next = c;
+                last = c;
+                prevMap[num] = c;
+            } else if (line.substr(0, 2) == "F|") {
+                // File line
+                std::istringstream iss(line.substr(2));
+                std::string fname, vfname, hash;
+                std::getline(iss, fname, '|');
+                std::getline(iss, vfname, '|');
+                std::getline(iss, hash, '|');
+                if (vfname.empty()) vfname = ".minigit/objects/" + hash;
+                FileNode* f = new FileNode{fname, vfname, hash, nullptr};
+                if (last) {
+                    f->next = last->fileHead;
+                    last->fileHead = f;
+                }
+            } else if (line == "ENDC") {
+                last = nullptr;
+            }
+        }
+        commitsFile.close();
+    }
+    // Rebuild branches
+    for (auto& [name, num] : branchPairs) {
+        if (commitMap.count(num)) {
+            branches[name] = commitMap[num];
+        }
+    }
+    // Set commitHead
+    if (branches.count(currentBranch)) {
+        commitHead = branches[currentBranch];
+        if (commitHead) currentCommitNumber = commitHead->commitNumber;
+    } else {
+        // If nothing loaded, create initial commit
+        commitHead = new CommitNode{"Initial commit", 0, nullptr, nullptr};
+        currentCommitNumber = 0;
+        branches[currentBranch] = commitHead;
+    }
+}
+
 void MiniGit::init() {
     createMinigitDirectory();
     std::cout << "Initialized empty MiniGit repository in .minigit/\n";
