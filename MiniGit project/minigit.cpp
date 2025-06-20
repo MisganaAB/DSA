@@ -105,3 +105,23 @@ void MiniGit::commit(const string& message) {
 
         oldFiles = oldFiles->next;
     }
+
+    if (!anyChange) {
+        cout << "No changes to commit." << endl;
+        // Clean up allocated newHead list
+        while (newHead) {
+            FileNode* tmp = newHead;
+            newHead = newHead->next;
+            delete tmp;
+        }
+        return;
+    }
+
+    CommitNode* newCommit = new CommitNode{message, ++currentCommitNumber, newHead, commitHead};
+    commitHead = newCommit;
+    branches[currentBranch] = commitHead;
+
+    cout << "[" << currentBranch << "] Commit #" << currentCommitNumber << ": " << message << "";
+    save();
+}
+
