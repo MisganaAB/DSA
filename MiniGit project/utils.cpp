@@ -41,6 +41,23 @@ string generateVersionedFilename(string filename, int version) {
     string ext = filename.substr(dot);
     return base + "_" + to_string(version) + ext;
 }
+string computeFileHash(const string& filename) {
+    ifstream file(filename, ios::binary);
+    if (!file.is_open()) return "";
+    stringstream buffer;
+    buffer << file.rdbuf();
+    string content = buffer.str();
+    return SHA1::from_string(content);
+}
+
+void copyFile(const std::string& src, const std::string& dest) {
+    try {
+        std::filesystem::copy_file(src, dest, std::filesystem::copy_options::overwrite_existing);
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Error copying file from '" << src << "' to '" << dest << "': " << e.what() << std::endl;
+    }
+}
+
 
 
 
