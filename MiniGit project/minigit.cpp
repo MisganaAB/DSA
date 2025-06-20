@@ -66,3 +66,42 @@ void MiniGit::removeFile(const string& filename) {
     }
     cout << "File not tracked.";
 }
+
+void MiniGit::commit(const string& message) {
+    FileNode *oldFiles = commitHead->fileHead;
+    FileNode *newHead = nullptr, *newTail = nullptr;
+    bool anyChange = false;
+
+    // Build a set of previous commit's file names and hashes
+    unordered_map<string, string> prevFiles;
+    if (commitHead && commitHead->next) {
+        for (FileNode* f = commitHead->next->fileHead; f; f = f->next) {
+            prevFiles[f->fileName] = f->contentHash;
+        }
+    }
+
+    while (oldFiles) {
+        string newHash = computeFileHash(oldFiles->fileName);
+        string objectPath = ".minigit/objects/" + newHash;
+
+        // Always copy the file to the object path, overwriting if necessary
+        copyFile(oldFiles->fileName, objectPath);
+
+        // If file is new or hash changed, mark as change
+        if (!prevFiles.count(oldFiles->fileName) || prevFiles[oldFiles->fileName] != newHash) {
+            anyChange = true;
+        }
+
+        FileNode* copied = new FileNode{
+            oldFiles->fileName,
+            objectPath, // Always set versionedFileName to objectPath
+            newHash,
+            nullptr
+        };
+
+        if (!newHead) newHead = copied;
+        else newTail->next = copied;
+        newTail = copied;
+
+        oldFiles = oldFiles->next;
+    }
