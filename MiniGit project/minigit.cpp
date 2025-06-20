@@ -125,3 +125,63 @@ void MiniGit::commit(const string& message) {
     save();
 }
 
+
+void MiniGit::checkout(const string& branchName) {
+    if (!branches.count(branchName)) {
+        cout << "Branch not found." << endl;
+        return;
+    }
+    
+    if (commitHead) {
+        for (FileNode* f = commitHead->fileHead; f; f = f->next) {
+            if (fileExists(f->fileName)) {
+                std::filesystem::remove(f->fileName);
+            }
+        }
+    }
+    currentBranch = branchName;
+    commitHead = branches[branchName];
+    // Restore files from the HEAD commit of the branch
+    for (FileNode* f = commitHead->fileHead; f; f = f->next) {
+        copyFile(f->versionedFileName, f->fileName);
+    }
+    cout << "Checked out branch '" << branchName << "' (HEAD -> #" << commitHead->commitNumber << ")." << endl;
+    save();
+}
+
+void MiniGit::printHistory() {
+    cout << "--- History for branch '" << currentBranch << "' ---";
+    for (CommitNode* c = commitHead; c; c = c->next) {
+        cout << "Commit #" << c->commitNumber << ": " << c->message << "";
+        for (FileNode* f = c->fileHead; f; f = f->next)
+            cout << "  " << f->fileName << " [hash: " << f->contentHash << "]";
+    }
+}
+
+void MiniGit::printBranches() {
+    cout << "Branches:";
+    for (auto& [name, head] : branches) {
+        cout << (name == currentBranch ? "* " : "  ") << name << " (HEAD -> #" << head->commitNumber << ")";
+    }
+}
+
+void MiniGit::createBranch(const string& name) {
+    if (branches.count(name)) {
+        cout << "Branch already exists.";
+        return;
+    }
+    branches[name] = commitHead;
+    cout << "Created branch '" << name << "' at commit #" << commitHead->commitNumber << "";
+    save();
+}
+
+void MiniGit::checkoutBranch(const string& name) {
+    if (!branches.count(name)) {
+        cout << "Branch not found.";
+        return;
+    }
+    currentBranch = name;
+    commitHead = branches[name];
+    cout << "Switched to branch '" << name << "' (HEAD -> #" << commitHead->commitNumber << ")";
+    save();
+}
