@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
              << "  add <filename>\n"
              << "  remove <filename>\n"
              << "  commit\n"
-             << "  checkout <commit#>\n"
+             << "  checkout <branchname>\n"
              << "  history\n"
              << "  branch <branchname>\n"
              << "  switch <branchname>\n"
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     } else if (cmd == "checkout" && args.size() >= 2) {
-        git.checkout(stoi(args[1]));
+        git.checkout(args[1]);
     } else if (cmd == "history") {
         git.printHistory();
     } else if (cmd == "branch" && args.size() >= 2) {
