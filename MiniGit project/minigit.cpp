@@ -31,3 +31,38 @@ MiniGit::~MiniGit() {
         }
     }
 }
+
+void MiniGit::addFile(const string& filename) {
+    if (!fileExists(filename)) {
+        cout << "File does not exist.";
+        return;
+    }
+    for (FileNode* t = commitHead->fileHead; t; t = t->next) {
+        if (t->fileName == filename) {
+            cout << "File already added.";
+            return;
+        }
+    }
+    string hashs = computeFileHash(filename);
+    FileNode* newNode = new FileNode{filename, "", hashs, commitHead->fileHead};
+    commitHead->fileHead = newNode;
+    cout << "File added and hashed (" << hashs << ").";
+    save();
+}
+
+void MiniGit::removeFile(const string& filename) {
+    FileNode *prev = nullptr, *cur = commitHead->fileHead;
+    while (cur) {
+        if (cur->fileName == filename) {
+            if (prev) prev->next = cur->next;
+            else commitHead->fileHead = cur->next;
+            delete cur;
+            cout << "File removed.";
+            save();
+            return;
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+    cout << "File not tracked.";
+}
