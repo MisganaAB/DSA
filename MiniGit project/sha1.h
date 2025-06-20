@@ -108,6 +108,7 @@ private:
         return (value << count) | (value >> (32 - count));
     }
 
+
     uint32_t m_digest[5];
     uint8_t m_block[64];
     size_t m_blockByteIndex;
