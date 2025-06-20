@@ -6,6 +6,8 @@
 #include <sstream>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
+
 using namespace std;
 
 MiniGit::MiniGit() {
@@ -189,10 +191,19 @@ void MiniGit::checkoutBranch(const string& name) {
 
 void MiniGit::diffCommits(int c1, int c2) {
     CommitNode *first = nullptr, *second = nullptr;
-    for (CommitNode* c = commitHead; c; c = c->next) {
-        if (c->commitNumber == c1) first = c;
-        if (c->commitNumber == c2) second = c;
+
+    unordered_map<int, CommitNode*> allCommits;
+    for (auto const& [branchName, branchHead] : branches) {
+        for (CommitNode* c = branchHead; c; c = c->next) {
+            if (allCommits.find(c->commitNumber) == allCommits.end()) {
+                allCommits[c->commitNumber] = c;
+            }
+        }
     }
+
+    if (allCommits.count(c1)) first = allCommits[c1];
+    if (allCommits.count(c2)) second = allCommits[c2];
+    
     if (!first || !second) {
         cout << "Invalid commit numbers.";
         return;
